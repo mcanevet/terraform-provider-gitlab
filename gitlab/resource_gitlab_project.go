@@ -250,7 +250,7 @@ func resourceGitlabProjectUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if d.HasChange("merge_method") {
-		options.Visibility = stringToVisibilityLevel(d.Get("merge_method").(string))
+		options.MergeMethod = stringToMergeMethod(d.Get("merge_method").(string))
 	}
 
 	if d.HasChange("only_allow_merge_if_pipeline_succeeds") {
