@@ -11,6 +11,7 @@ func resourceGitlabBranchProtection() *schema.Resource {
 	acceptedAccessLevels := []string{
 		"master",
 		"developer",
+		"no one",
 	}
 	return &schema.Resource{
 		Create: resourceGitlabBranchProtectionCreate,
