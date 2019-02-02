@@ -25,14 +25,17 @@ func TestAccGitlabProject_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
 					testAccCheckGitlabProjectAttributes(&project, &testAccGitlabProjectExpectedAttributes{
-						Name:                 fmt.Sprintf("foo-%d", rInt),
-						Path:                 fmt.Sprintf("foo.%d", rInt),
-						Description:          "Terraform acceptance tests",
-						IssuesEnabled:        true,
-						MergeRequestsEnabled: true,
-						WikiEnabled:          true,
-						SnippetsEnabled:      true,
-						Visibility:           gitlab.PublicVisibility,
+						Name:                             fmt.Sprintf("foo-%d", rInt),
+						Path:                             fmt.Sprintf("foo.%d", rInt),
+						Description:                      "Terraform acceptance tests",
+						IssuesEnabled:                    true,
+						MergeRequestsEnabled:             true,
+						WikiEnabled:                      true,
+						SnippetsEnabled:                  true,
+						Visibility:                       gitlab.PublicVisibility,
+						MergeMethod:                      gitlab.FastForwardMerge,
+						OnlyAllowMergeIfPipelineSucceeds: true,
+						OnlyAllowMergeIfAllDiscussionsAreResolved: true,
 					}),
 				),
 			},
@@ -42,27 +45,33 @@ func TestAccGitlabProject_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
 					testAccCheckGitlabProjectAttributes(&project, &testAccGitlabProjectExpectedAttributes{
-						Name:        fmt.Sprintf("foo-%d", rInt),
-						Path:        fmt.Sprintf("foo.%d", rInt),
-						Description: "Terraform acceptance tests!",
-						Visibility:  gitlab.PublicVisibility,
+						Name:                             fmt.Sprintf("foo-%d", rInt),
+						Path:                             fmt.Sprintf("foo.%d", rInt),
+						Description:                      "Terraform acceptance tests!",
+						Visibility:                       gitlab.PublicVisibility,
+						MergeMethod:                      gitlab.FastForwardMerge,
+						OnlyAllowMergeIfPipelineSucceeds: true,
+						OnlyAllowMergeIfAllDiscussionsAreResolved: true,
 					}),
 				),
 			},
-			//Update the project to turn the features on again
+			// Update the project to turn the features on again
 			{
 				Config: testAccGitlabProjectConfig(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckGitlabProjectExists("gitlab_project.foo", &project),
 					testAccCheckGitlabProjectAttributes(&project, &testAccGitlabProjectExpectedAttributes{
-						Name:                 fmt.Sprintf("foo-%d", rInt),
-						Path:                 fmt.Sprintf("foo.%d", rInt),
-						Description:          "Terraform acceptance tests",
-						IssuesEnabled:        true,
-						MergeRequestsEnabled: true,
-						WikiEnabled:          true,
-						SnippetsEnabled:      true,
-						Visibility:           gitlab.PublicVisibility,
+						Name:                             fmt.Sprintf("foo-%d", rInt),
+						Path:                             fmt.Sprintf("foo.%d", rInt),
+						Description:                      "Terraform acceptance tests",
+						IssuesEnabled:                    true,
+						MergeRequestsEnabled:             true,
+						WikiEnabled:                      true,
+						SnippetsEnabled:                  true,
+						Visibility:                       gitlab.PublicVisibility,
+						MergeMethod:                      gitlab.FastForwardMerge,
+						OnlyAllowMergeIfPipelineSucceeds: true,
+						OnlyAllowMergeIfAllDiscussionsAreResolved: true,
 					}),
 				),
 			},
@@ -213,6 +222,9 @@ type testAccGitlabProjectExpectedAttributes struct {
 		GroupName        string
 		GroupAccessLevel int
 	}
+	MergeMethod                               gitlab.MergeMethodValue
+	OnlyAllowMergeIfPipelineSucceeds          bool
+	OnlyAllowMergeIfAllDiscussionsAreResolved bool
 }
 
 func testAccCheckGitlabProjectAttributes(project *gitlab.Project, want *testAccGitlabProjectExpectedAttributes) resource.TestCheckFunc {
@@ -255,6 +267,18 @@ func testAccCheckGitlabProjectAttributes(project *gitlab.Project, want *testAccG
 			if group.GroupAccessLevel != want.SharedWithGroups[i].GroupAccessLevel {
 				return fmt.Errorf("got shared with groups access: %d; want %d", group.GroupAccessLevel, want.SharedWithGroups[i].GroupAccessLevel)
 			}
+		}
+
+		if project.MergeMethod != string(want.MergeMethod) {
+			return fmt.Errorf("got merge_method %q; want %q", project.MergeMethod, want.MergeMethod)
+		}
+
+		if project.OnlyAllowMergeIfPipelineSucceeds != want.OnlyAllowMergeIfPipelineSucceeds {
+			return fmt.Errorf("got only_allow_merge_if_pipeline_succeeds %t; want %t", project.OnlyAllowMergeIfPipelineSucceeds, want.OnlyAllowMergeIfPipelineSucceeds)
+		}
+
+		if project.OnlyAllowMergeIfAllDiscussionsAreResolved != want.OnlyAllowMergeIfAllDiscussionsAreResolved {
+			return fmt.Errorf("got only_allow_merge_if_all_discussions_are_resolved %t; want %t", project.OnlyAllowMergeIfAllDiscussionsAreResolved, want.OnlyAllowMergeIfAllDiscussionsAreResolved)
 		}
 
 		return nil
@@ -313,6 +337,9 @@ resource "gitlab_project" "foo" {
   # So that acceptance tests can be run in a gitlab organization
   # with no billing
   visibility_level = "public"
+  merge_method = "ff"
+  only_allow_merge_if_pipeline_succeeds = true
+  only_allow_merge_if_all_discussions_are_resolved = true
 }
 	`, rInt, rInt)
 }
@@ -327,6 +354,9 @@ resource "gitlab_project" "foo" {
   # So that acceptance tests can be run in a gitlab organization
   # with no billing
   visibility_level = "public"
+  merge_method = "ff"
+  only_allow_merge_if_pipeline_succeeds = true
+  only_allow_merge_if_all_discussions_are_resolved = true
 
   issues_enabled = false
   merge_requests_enabled = false
